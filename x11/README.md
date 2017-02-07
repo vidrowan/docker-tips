@@ -73,14 +73,16 @@ pc34.home:0  MIT-MAGIC-COOKIE-1  491476ce33cxxx86d4bfbcea45
 $ export DISPLAY=$DISPLAY_MAC
 $ xauth
 Using authority file /Users/pat/.Xauthority
-xauth> add 192.168.64.1:0 . 491476ce33cxxx86d4bfbcea45
+xauth> add [enter your $DISPLAY_MAC] . [enter your magic cookie]
+#example: xauth> add 192.168.64.1:0 . 491476ce33cxxx86d4bfbcea45
 xauth> exit
 Writing authority file /Users/pat/.Xauthority
 $ xauth list
 pc34.home/unix:0  MIT-MAGIC-COOKIE-1  491476ce33cxxx86d4bfbcea45
 pc34.home:0  MIT-MAGIC-COOKIE-1  491476ce33cxxx86d4bfbcea45
 192.168.64.1:0  MIT-MAGIC-COOKIE-1  491476ce33cxxx86d4bfbcea45
-pc34:docker-tips pat$ docker run -e DISPLAY=$DISPLAY_MAC -v ~/.Xauthority:/root/.Xauthority -it jess/gimp
+pc34:docker-tips 
+pat$ docker run -e DISPLAY=$DISPLAY_MAC -v ~/.Xauthority:/root/.Xauthority -it jess/gimp
 
 ```
 
