@@ -124,7 +124,13 @@ function docker-gui(){ #launch docker project with x11 initiated. usage: docker-
   fi
 }
 ```
+Note the inherent risk in using this without edits:
 
+I'm passing in my home dir into root (-v ~/:/root). That’s fun for testing but not safe if you’re trying to use a container in a secure/sandboxed way.
+
+I also don’t include the --memory="330m” constraint that is ideal if you’re running firefox or something.
+
+More info on that here: https://docs.docker.com/engine/admin/resource_constraints/
 
 ### Troubleshooting
 
