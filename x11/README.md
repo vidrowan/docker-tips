@@ -64,7 +64,7 @@ Launch XQuartz and in security settings, set authenticate connexions and expose 
 
 <img src="/img/xquartz-settings-auth.png"/>
 
-In a Terminal, list the magic cookies that have been set, and add one for the Docker VM bridhe IP. 
+In a Terminal, list the magic cookies that have been set, and add one for the Docker VM bridhe IP.
 ```
 $ export DISPLAY_MAC=`ifconfig en0 | grep "inet " | cut -d " " -f2`:0
 $ xauth list
@@ -75,13 +75,16 @@ $ xauth
 Using authority file /Users/pat/.Xauthority
 xauth> add [enter your $DISPLAY_MAC] . [enter your magic cookie]
 #example: xauth> add 192.168.64.1:0 . 491476ce33cxxx86d4bfbcea45
+#ex2 Untested:
+MagicCookie=$(xauth list|grep `uname -n` | awk '{ print $3}'); DISPLAY_MAC=`ifconfig en0 | grep "inet " | cut -d " " -f2`:0; xauth add $(echo $DISPLAY_MAC . $MagicCookie);
+
 xauth> exit
 Writing authority file /Users/pat/.Xauthority
 $ xauth list
 pc34.home/unix:0  MIT-MAGIC-COOKIE-1  491476ce33cxxx86d4bfbcea45
 pc34.home:0  MIT-MAGIC-COOKIE-1  491476ce33cxxx86d4bfbcea45
 192.168.64.1:0  MIT-MAGIC-COOKIE-1  491476ce33cxxx86d4bfbcea45
-pc34:docker-tips 
+pc34:docker-tips
 pat$ docker run -e DISPLAY=$DISPLAY_MAC -v ~/.Xauthority:/root/.Xauthority -it jess/gimp
 
 ```
@@ -91,7 +94,7 @@ In your .bashrc:
 export DISPLAY_MAC=`ifconfig en0 | grep "inet " | cut -d " " -f2`:0
 defaults write org.macosforge.xquartz.X11 nolisten_tcp -boolean false
 
-function startx() {
+function startXQuartz() {
 	if [ -z "$(ps -ef|grep XQuartz|grep -v grep)" ] ; then
 	    open -a XQuartz
 	fi
@@ -100,9 +103,28 @@ function startx() {
 
 Create a container using X11:
 ```
-startx
+startXQuartz
 docker run -e DISPLAY=$DISPLAY_MAC -v ~/.Xauthority:/root/.Xauthority -it jess/geary
 ```
+
+
+#### Vid's preferred method, a function that wraps the above and asks for the container to launch.
+```
+function docker-gui(){ #launch docker project with x11 initiated. usage: docker-gui jess/gimp;
+  if [[ ! -n "$1" ]] ; then
+    echo "Parameter #1 is blank.";
+    echo -e "Please pass a GUI based docker container to run. \nUsage: docker-gui jess/gimp; \nOther examples include: jess/atom, jess/audacity, jess/chrome, jess/firefox, jess/inkscape, jess/keepass2, jess/sublime-text-3, jess/spotify. See: https://github.com/vidrowan/docker-tips/tree/master/x11 or https://github.com/jessfraz/dockerfiles for more info.";
+  else
+    echo "Parameter #1/Docker container is $1";
+    if [ -n $(MagicCookie 2> /dev/null; [ $? == 0 ] && echo 1) ]; then MagicCookie=$(xauth list|grep `uname -n` | awk '{ print $3}'); fi && \
+    if [ -n $(DISPLAY_MAC 2> /dev/null; [ $? == 0 ] && echo 1) ]; then DISPLAY_MAC=`ifconfig en0 | grep "inet " | cut -d " " -f2`:0; fi && \
+    if [ -n $(xauth list|grep $DISPLAY_MAC 2> /dev/null; [ $? == 0 ] && echo 1) ]; then xauth add $(echo $DISPLAY_MAC . $MagicCookie); fi && \
+    if [ -z "$(ps -ef|grep XQuartz|grep -v grep)" ] ; then open -a XQuartz; fi && \
+    docker run -e DISPLAY=$DISPLAY_MAC -v ~/:/root -v ~/.Xauthority:/root/.Xauthority -it $1; #passing in home dir as root
+  fi
+}
+```
+
 
 ### Troubleshooting
 
@@ -115,7 +137,7 @@ Checking XQuartz / Preferences / Security / "Allow connections from network clie
 
 ## Examples
 
-The examples assume you have started XQuartz (xstart) and that you have setup the DISPLAY_MAC environment variable. 
+The examples assume you have started XQuartz (xstart) and that you have setup the DISPLAY_MAC environment variable.
 
 Examples are shown without authentication. Just add -v ~/.Xauthority:/root/.Xauthority (or mount it under the home directory of the user in the Docker image that is used to start the process).
 
@@ -124,7 +146,7 @@ Examples are shown without authentication. Just add -v ~/.Xauthority:/root/.Xaut
 When you run STS in a container, first create a maven volume. Volume mount is still slower on Mac than native access and using a single maven volume for all your maven-related containers will allow these containers to share a single maven cache while getting the best read performance. Create a directory on your Mac to host your STS workspace, and mount it in the container. You can check-out the source inside that directory, then import it in STS (File -> Import -> Existing maven project), or check it our from STS (File -> Import -> Maven project from SCM, in which case you also need to mount your Git credentials). If your app is using MongoDB or other services, launch them as containers with a name before STS, then link them to the STS container: you will need to set your Run configuration to the alias you have set for the links for your app to talk to these services. This whole setup can be automated with a compose file. Last, expose the ports for the app that you want to test in your browser or with other tools: these will be available from your mac at `docker.local:port`. This example is designed to develop the [spring-doge app](https://github.com/chanezon/spring-doge), which uses Mongodb, and a complete docker-compose.yml for it is available at  [spring-doge compose file](https://github.com/chanezon/spring-doge/blob/master/docker-compose.dev.yml).
 
 When used with the right compose file, this setup allows a new developer in the team to start developing and debugging a complex Java app with `git clone` and `docker-compose up`: no more long `README` files, no more complex setup and yak shaving:-)
- 
+
 ```
 docker run -name mongo -d mongo
 docker volume create maven
@@ -153,7 +175,7 @@ leesah/eclipse \
 
 <img src="/img/eclipse-mars.png"/>
 
-Tiokksar maintains a container for Eclipse Luna. 
+Tiokksar maintains a container for Eclipse Luna.
 ```
 docker run -e DISPLAY=$DISPLAY_MAC -it \
 -v $HOME/code/eclipse-luna:/home/dev/eclipse \
@@ -165,7 +187,7 @@ eclipse -data /home/dev/eclipse
 
 ### Gimp
 
-Jess' Gimp image. Mount a local volume if you want to edit images from your laptop. 
+Jess' Gimp image. Mount a local volume if you want to edit images from your laptop.
 ```
 docker run -e DISPLAY=$DISPLAY_MAC -it jess/gimp
 ```
@@ -174,7 +196,7 @@ docker run -e DISPLAY=$DISPLAY_MAC -it jess/gimp
 
 ### Inkscape
 
-Jess' Inkspace image. Mount a local volume if you want to edit SVG files from your laptop. 
+Jess' Inkspace image. Mount a local volume if you want to edit SVG files from your laptop.
 ```
 docker run -e DISPLAY=$DISPLAY_MAC -it rasch/inkscape
 ```
@@ -185,8 +207,8 @@ docker run -e DISPLAY=$DISPLAY_MAC -it rasch/inkscape
 
 Jess' Firefox image. Second example mounts a local directory as a volume and opens a file from it.
 ```
-docker run -e DISPLAY=$DISPLAY_MAC -it jess/firefox 
-docker run -e DISPLAY=$DISPLAY_MAC -it \ 
+docker run -e DISPLAY=$DISPLAY_MAC -it jess/firefox
+docker run -e DISPLAY=$DISPLAY_MAC -it \
 -v $PWD:/foo jess/firefox file:///foo/sinewave.gif
 ```
 
@@ -196,7 +218,7 @@ docker run -e DISPLAY=$DISPLAY_MAC -it \
 
 Jess' Chrome image does not work for me. I need to investigate what the issue is.
 ```
-docker run -e DISPLAY=$DISPLAY_MAC -it jess/chrome 
+docker run -e DISPLAY=$DISPLAY_MAC -it jess/chrome
 ```
 
 ### Gnu Octave
@@ -234,8 +256,6 @@ docker exec -it 3drender bash -c "cd /scatter/3D-scatter/ && source activate pyt
 
 Jessie Frazelle's blog post, talks and repos, are invaluable. I highly recommend looking at her [Dockerfiles repo](https://github.com/jfrazelle/dockerfiles).
 
-[Benny Cornelissen's post was super useful](http://blog.bennycornelissen.nl/bwc-gui-apps-in-docker-on-osx/) for the Mac side. 
+[Benny Cornelissen's post was super useful](http://blog.bennycornelissen.nl/bwc-gui-apps-in-docker-on-osx/) for the Mac side.
 
 [Cameron Taggart's blog post](http://blog.ctaggart.com/2016/03/gnu-octave-via-docker-x11.html) and [Victoria Lynn's repo](https://github.com/VictoriaLynn/plotting-examples) were excellent for Octave and SciPy.
-
- 
